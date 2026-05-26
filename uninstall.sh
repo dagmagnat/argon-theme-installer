@@ -1,5 +1,5 @@
 #!/bin/sh
-# Remove Argon installed by openwrt-argon-installer.
+# Remove Argon installed by argon-theme-installer.
 set -eu
 
 log() { printf '%s\n' "[argon] $*"; }

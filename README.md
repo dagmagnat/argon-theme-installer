@@ -52,13 +52,13 @@ luci-app-argon-config-1.0-r20230608.apk
 Подключитесь к роутеру по SSH и выполните:
 
 ```sh
-sh -c "$(wget -O- https://raw.githubusercontent.com/dagmagnat/openwrt-argon-installer/main/install.sh)"
+sh -c "$(wget -O- https://raw.githubusercontent.com/dagmagnat/argon-theme-installer/main/install.sh)"
 ```
 
 Если на роутере есть `curl`, но нет `wget`:
 
 ```sh
-sh -c "$(curl -fsSL https://raw.githubusercontent.com/dagmagnat/openwrt-argon-installer/main/install.sh)"
+sh -c "$(curl -fsSL https://raw.githubusercontent.com/dagmagnat/argon-theme-installer/main/install.sh)"
 ```
 
 После установки обновите страницу LuCI или зайдите в веб-интерфейс заново.
@@ -68,13 +68,13 @@ sh -c "$(curl -fsSL https://raw.githubusercontent.com/dagmagnat/openwrt-argon-in
 Можно проверить, что именно определит скрипт, не меняя систему:
 
 ```sh
-sh -c "$(wget -O- https://raw.githubusercontent.com/dagmagnat/openwrt-argon-installer/main/install.sh)" -- --dry-run
+sh -c "$(wget -O- https://raw.githubusercontent.com/dagmagnat/argon-theme-installer/main/install.sh)" -- --dry-run
 ```
 
 ## Установка только темы, без приложения настроек Argon
 
 ```sh
-sh -c "$(wget -O- https://raw.githubusercontent.com/dagmagnat/openwrt-argon-installer/main/install.sh)" -- --theme-only
+sh -c "$(wget -O- https://raw.githubusercontent.com/dagmagnat/argon-theme-installer/main/install.sh)" -- --theme-only
 ```
 
 ## Если не хватает зависимостей
@@ -82,7 +82,7 @@ sh -c "$(wget -O- https://raw.githubusercontent.com/dagmagnat/openwrt-argon-inst
 По умолчанию скрипт старается ставить локальные пакеты максимально осторожно. Если установка не прошла из-за отсутствующих зависимостей, можно разрешить штатному пакетному менеджеру использовать уже настроенные репозитории прошивки:
 
 ```sh
-sh -c "$(wget -O- https://raw.githubusercontent.com/dagmagnat/openwrt-argon-installer/main/install.sh)" -- --force-online
+sh -c "$(wget -O- https://raw.githubusercontent.com/dagmagnat/argon-theme-installer/main/install.sh)" -- --force-online
 ```
 
 Этот режим **не заменяет** репозитории. Он использует только те источники пакетов, которые уже настроены в вашей прошивке.
@@ -90,17 +90,17 @@ sh -c "$(wget -O- https://raw.githubusercontent.com/dagmagnat/openwrt-argon-inst
 ## Удаление
 
 ```sh
-sh -c "$(wget -O- https://raw.githubusercontent.com/dagmagnat/openwrt-argon-installer/main/uninstall.sh)"
+sh -c "$(wget -O- https://raw.githubusercontent.com/dagmagnat/argon-theme-installer/main/uninstall.sh)"
 ```
 
 Скрипт удаления удалит `luci-theme-argon` и `luci-app-argon-config`, затем вернёт предыдущую тему LuCI, если она была сохранена. Если предыдущая тема не найдена, будет выбран стандартный Bootstrap.
 
 ## Локальная установка без GitHub
 
-Можно скопировать весь проект на роутер, например в `/tmp/openwrt-argon-installer`, и запустить установку локально:
+Можно скопировать весь проект на роутер, например в `/tmp/argon-theme-installer`, и запустить установку локально:
 
 ```sh
-cd /tmp/openwrt-argon-installer
+cd /tmp/argon-theme-installer
 sh install.sh
 ```
 
@@ -140,7 +140,7 @@ apk add --allow-untrusted файл.apk
 Подключитесь по SSH и удалите тему:
 
 ```sh
-sh -c "$(wget -O- https://raw.githubusercontent.com/dagmagnat/openwrt-argon-installer/main/uninstall.sh)"
+sh -c "$(wget -O- https://raw.githubusercontent.com/dagmagnat/argon-theme-installer/main/uninstall.sh)"
 ```
 
 ### У меня ImmortalWrt или X-Wrt
@@ -153,15 +153,15 @@ sh -c "$(wget -O- https://raw.githubusercontent.com/dagmagnat/openwrt-argon-inst
 
 ```sh
 REPO_OWNER="dagmagnat"
-REPO_NAME="openwrt-argon-installer"
+REPO_NAME="argon-theme-installer"
 REPO_BRANCH="main"
-BASE_URL="https://raw.githubusercontent.com/dagmagnat/openwrt-argon-installer/main"
+BASE_URL="https://raw.githubusercontent.com/dagmagnat/argon-theme-installer/main"
 ```
 
 Пример запуска из другого форка:
 
 ```sh
-REPO_OWNER="YOUR_GITHUB_USERNAME" REPO_NAME="openwrt-argon-installer" sh -c "$(wget -O- https://raw.githubusercontent.com/YOUR_GITHUB_USERNAME/openwrt-argon-installer/main/install.sh)"
+REPO_OWNER="YOUR_GITHUB_USERNAME" REPO_NAME="argon-theme-installer" sh -c "$(wget -O- https://raw.githubusercontent.com/YOUR_GITHUB_USERNAME/argon-theme-installer/main/install.sh)"
 ```
 
 ## Важное замечание про AmneziaWG
@@ -222,13 +222,13 @@ LuCI theme packages are usually not selected by router CPU architecture. For Arg
 Connect to the router over SSH and run:
 
 ```sh
-sh -c "$(wget -O- https://raw.githubusercontent.com/dagmagnat/openwrt-argon-installer/main/install.sh)"
+sh -c "$(wget -O- https://raw.githubusercontent.com/dagmagnat/argon-theme-installer/main/install.sh)"
 ```
 
 If your router has `curl` instead of `wget`:
 
 ```sh
-sh -c "$(curl -fsSL https://raw.githubusercontent.com/dagmagnat/openwrt-argon-installer/main/install.sh)"
+sh -c "$(curl -fsSL https://raw.githubusercontent.com/dagmagnat/argon-theme-installer/main/install.sh)"
 ```
 
 After installation, refresh LuCI or log in to the web interface again.
@@ -238,13 +238,13 @@ After installation, refresh LuCI or log in to the web interface again.
 You can check what the script detects without changing the system:
 
 ```sh
-sh -c "$(wget -O- https://raw.githubusercontent.com/dagmagnat/openwrt-argon-installer/main/install.sh)" -- --dry-run
+sh -c "$(wget -O- https://raw.githubusercontent.com/dagmagnat/argon-theme-installer/main/install.sh)" -- --dry-run
 ```
 
 ## Install only the theme, without Argon config app
 
 ```sh
-sh -c "$(wget -O- https://raw.githubusercontent.com/dagmagnat/openwrt-argon-installer/main/install.sh)" -- --theme-only
+sh -c "$(wget -O- https://raw.githubusercontent.com/dagmagnat/argon-theme-installer/main/install.sh)" -- --theme-only
 ```
 
 ## If dependencies are missing
@@ -252,7 +252,7 @@ sh -c "$(wget -O- https://raw.githubusercontent.com/dagmagnat/openwrt-argon-inst
 By default, the script tries to install bundled local packages conservatively. If installation fails because dependencies are missing, you can allow the native package manager to use the repositories already configured on the router:
 
 ```sh
-sh -c "$(wget -O- https://raw.githubusercontent.com/dagmagnat/openwrt-argon-installer/main/install.sh)" -- --force-online
+sh -c "$(wget -O- https://raw.githubusercontent.com/dagmagnat/argon-theme-installer/main/install.sh)" -- --force-online
 ```
 
 This mode does **not** replace repositories. It only uses the package sources already configured in your firmware.
@@ -260,17 +260,17 @@ This mode does **not** replace repositories. It only uses the package sources al
 ## Uninstall
 
 ```sh
-sh -c "$(wget -O- https://raw.githubusercontent.com/dagmagnat/openwrt-argon-installer/main/uninstall.sh)"
+sh -c "$(wget -O- https://raw.githubusercontent.com/dagmagnat/argon-theme-installer/main/uninstall.sh)"
 ```
 
 The uninstall script removes `luci-theme-argon` and `luci-app-argon-config`, then restores the previous LuCI theme if it was saved. If no previous theme is found, it falls back to Bootstrap.
 
 ## Local installation without GitHub
 
-You can copy the whole project to the router, for example to `/tmp/openwrt-argon-installer`, and run:
+You can copy the whole project to the router, for example to `/tmp/argon-theme-installer`, and run:
 
 ```sh
-cd /tmp/openwrt-argon-installer
+cd /tmp/argon-theme-installer
 sh install.sh
 ```
 
@@ -310,7 +310,7 @@ apk add --allow-untrusted file.apk
 Connect through SSH and remove the theme:
 
 ```sh
-sh -c "$(wget -O- https://raw.githubusercontent.com/dagmagnat/openwrt-argon-installer/main/uninstall.sh)"
+sh -c "$(wget -O- https://raw.githubusercontent.com/dagmagnat/argon-theme-installer/main/uninstall.sh)"
 ```
 
 ### I use ImmortalWrt or X-Wrt
@@ -323,15 +323,15 @@ Environment variables:
 
 ```sh
 REPO_OWNER="dagmagnat"
-REPO_NAME="openwrt-argon-installer"
+REPO_NAME="argon-theme-installer"
 REPO_BRANCH="main"
-BASE_URL="https://raw.githubusercontent.com/dagmagnat/openwrt-argon-installer/main"
+BASE_URL="https://raw.githubusercontent.com/dagmagnat/argon-theme-installer/main"
 ```
 
 Run from another fork:
 
 ```sh
-REPO_OWNER="YOUR_GITHUB_USERNAME" REPO_NAME="openwrt-argon-installer" sh -c "$(wget -O- https://raw.githubusercontent.com/YOUR_GITHUB_USERNAME/openwrt-argon-installer/main/install.sh)"
+REPO_OWNER="YOUR_GITHUB_USERNAME" REPO_NAME="argon-theme-installer" sh -c "$(wget -O- https://raw.githubusercontent.com/YOUR_GITHUB_USERNAME/argon-theme-installer/main/install.sh)"
 ```
 
 ## Important note about AmneziaWG

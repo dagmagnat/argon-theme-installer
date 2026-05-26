@@ -13,6 +13,7 @@
 
 ## Что делает установщик
 
+- обновляет списки пакетов через `opkg update` или `apk update`;
 - устанавливает тему `luci-theme-argon`;
 - устанавливает приложение настроек `luci-app-argon-config`;
 - включает Argon как активную тему LuCI;
@@ -24,6 +25,7 @@
 - не заменяет системные репозитории OpenWrt;
 - не редактирует feeds;
 - не запускает `apk upgrade`;
+- не запускает `opkg upgrade`;
 - не обновляет прошивку;
 - не устанавливает AmneziaWG/WireGuard или другие VPN-пакеты.
 
@@ -46,6 +48,22 @@ luci-app-argon-config-1.0-r20230608.apk
 ```
 
 Пакеты темы LuCI не выбираются по CPU-архитектуре роутера. Для Argon обычно достаточно выбрать правильный тип пакетного менеджера: `opkg` или `apk`.
+
+## Важное про обновление списков пакетов
+
+Перед установкой Argon скрипт автоматически выполняет:
+
+```sh
+# Для OPKG-систем
+opkg update
+
+# Для APK-систем
+apk update
+```
+
+Это нужно, чтобы пакетный менеджер видел актуальные зависимости из родных репозиториев прошивки. Это **не обновление прошивки** и **не массовое обновление установленных пакетов**. Скрипт не выполняет `opkg upgrade` и не выполняет `apk upgrade`.
+
+Если по какой-то причине нужно отключить обновление списков, можно использовать `--skip-update`, но обычным пользователям это не рекомендуется.
 
 ## Установка одной командой
 
@@ -79,7 +97,7 @@ sh -c "$(wget -O- https://raw.githubusercontent.com/dagmagnat/argon-theme-instal
 
 ## Если не хватает зависимостей
 
-По умолчанию скрипт старается ставить локальные пакеты максимально осторожно. Если установка не прошла из-за отсутствующих зависимостей, можно разрешить штатному пакетному менеджеру использовать уже настроенные репозитории прошивки:
+Скрипт уже выполняет `opkg update` или `apk update` перед установкой. Если установка всё равно не прошла из-за зависимостей, можно запустить расширенный режим восстановления зависимостей:
 
 ```sh
 sh -c "$(wget -O- https://raw.githubusercontent.com/dagmagnat/argon-theme-installer/main/install.sh)" -- --force-online
@@ -110,7 +128,8 @@ sh install.sh
 
 ```text
 --theme-only       установить только luci-theme-argon, без luci-app-argon-config
---force-online     разрешить пакетному менеджеру скачать недостающие зависимости
+--force-online     расширенный режим восстановления зависимостей
+--skip-update      не запускать opkg update/apk update перед установкой
 --dry-run          показать определённую систему и выбранные пакеты без установки
 --base-url URL     использовать другой raw URL для загрузки пакетов
 -h, --help         показать справку
@@ -183,6 +202,7 @@ The script automatically detects the package manager on the router:
 
 ## What the installer does
 
+- updates package lists with `opkg update` or `apk update`;
 - installs `luci-theme-argon`;
 - installs `luci-app-argon-config`;
 - enables Argon as the active LuCI theme;
@@ -194,6 +214,7 @@ The script automatically detects the package manager on the router:
 - it does not replace OpenWrt repositories;
 - it does not edit package feeds;
 - it does not run `apk upgrade`;
+- it does not run `opkg upgrade`;
 - it does not upgrade firmware;
 - it does not install AmneziaWG/WireGuard or any other VPN packages.
 
@@ -216,6 +237,22 @@ luci-app-argon-config-1.0-r20230608.apk
 ```
 
 LuCI theme packages are usually not selected by router CPU architecture. For Argon, the important part is the package manager type: `opkg` or `apk`.
+
+## Important note about package list updates
+
+Before installing Argon, the script automatically runs:
+
+```sh
+# On OPKG-based systems
+opkg update
+
+# On APK-based systems
+apk update
+```
+
+This is required so the package manager can see current dependencies from the firmware's native repositories. This is **not a firmware upgrade** and **not a mass upgrade of installed packages**. The script does not run `opkg upgrade` or `apk upgrade`.
+
+If you really need to disable package list updates, use `--skip-update`, but this is not recommended for normal installation.
 
 ## One-command installation
 
@@ -249,7 +286,7 @@ sh -c "$(wget -O- https://raw.githubusercontent.com/dagmagnat/argon-theme-instal
 
 ## If dependencies are missing
 
-By default, the script tries to install bundled local packages conservatively. If installation fails because dependencies are missing, you can allow the native package manager to use the repositories already configured on the router:
+The script already runs `opkg update` or `apk update` before installation. If installation still fails because dependencies are missing, you can run the extended dependency recovery mode:
 
 ```sh
 sh -c "$(wget -O- https://raw.githubusercontent.com/dagmagnat/argon-theme-installer/main/install.sh)" -- --force-online
@@ -280,7 +317,8 @@ In this mode, the script uses local packages from `packages/` and does not downl
 
 ```text
 --theme-only       install only luci-theme-argon, skip luci-app-argon-config
---force-online     allow the package manager to fetch missing dependencies
+--force-online     extended dependency recovery mode
+--skip-update      do not run opkg update/apk update before installation
 --dry-run          show detected system and selected packages without installing
 --base-url URL     use another raw URL for package downloads
 -h, --help         show help

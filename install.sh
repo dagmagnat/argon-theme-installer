@@ -13,6 +13,7 @@ TMP_DIR="${TMPDIR:-/tmp}/argon-installer.$$"
 INSTALL_CONFIG=1
 DRY_RUN=0
 FORCE_ONLINE=0
+UPDATE_LISTS=1
 
 OPKG_THEME="luci-theme-argon_2.3.2-r20250207_all1.ipk"
 OPKG_CONFIG="luci-app-argon-config_0.9_all.ipk"
@@ -37,7 +38,8 @@ Usage:
 
 Options:
   --theme-only       install only luci-theme-argon, skip luci-app-argon-config
-  --force-online     allow package manager to use configured official repositories if needed
+  --force-online     allow extra online dependency recovery if local install fails
+  --skip-update      do not run opkg update/apk update before installation
   --dry-run          print detected system and selected packages without installing
   --base-url URL     override package download base URL
   -h, --help         show this help
@@ -54,6 +56,7 @@ while [ "$#" -gt 0 ]; do
     case "$1" in
         --theme-only) INSTALL_CONFIG=0 ;;
         --force-online) FORCE_ONLINE=1 ;;
+        --skip-update) UPDATE_LISTS=0 ;;
         --dry-run) DRY_RUN=1 ;;
         --base-url) shift; [ "$#" -gt 0 ] || fail "--base-url requires a value"; BASE_URL="$1" ;;
         --base-url=*) BASE_URL="${1#*=}" ;;
@@ -91,6 +94,32 @@ detect_pkg_manager() {
 }
 
 have() { command -v "$1" >/dev/null 2>&1; }
+
+refresh_package_lists() {
+    [ "$UPDATE_LISTS" = "1" ] || {
+        log "Package list update skipped by --skip-update"
+        return 0
+    }
+
+    if [ "$DRY_RUN" = "1" ]; then
+        case "$PKG_MANAGER" in
+            opkg) log "DRY-RUN: opkg update" ;;
+            apk) log "DRY-RUN: apk update" ;;
+        esac
+        return 0
+    fi
+
+    case "$PKG_MANAGER" in
+        opkg)
+            log "Updating OPKG package lists: opkg update"
+            opkg update || fail "opkg update failed. Check internet access and configured OpenWrt feeds."
+            ;;
+        apk)
+            log "Updating APK package indexes: apk update"
+            apk update || fail "apk update failed. Check internet access and configured OpenWrt repositories."
+            ;;
+    esac
+}
 
 fetch_file() {
     url="$1"
@@ -191,17 +220,8 @@ install_with_opkg() {
     fi
 }
 
-apk_supports_no_network() {
-    apk --help 2>&1 | grep -q -- '--no-network' && return 0
-    apk add --help 2>&1 | grep -q -- '--no-network' && return 0
-    return 1
-}
-
 apk_add_local() {
-    if [ "$FORCE_ONLINE" = "0" ] && apk_supports_no_network; then
-        apk --no-network add --allow-untrusted "$@" && return 0
-        warn "Offline APK install failed; retrying with configured repositories."
-    fi
+    # Use configured APK repositories for dependencies, but do not change repository files.
     apk add --allow-untrusted "$@"
 }
 
@@ -234,6 +254,15 @@ log "Firmware: ${DISTRIB_ID} ${DISTRIB_RELEASE}"
 log "Target: ${DISTRIB_TARGET}; arch: ${DISTRIB_ARCH}"
 log "Package manager: ${PKG_MANAGER}"
 log "Base URL: ${BASE_URL}"
+
+case "$PKG_MANAGER" in
+    apk|opkg)
+        refresh_package_lists
+        ;;
+    *)
+        fail "Neither apk nor opkg was found. This does not look like a supported OpenWrt-like system."
+        ;;
+esac
 
 case "$PKG_MANAGER" in
     apk)

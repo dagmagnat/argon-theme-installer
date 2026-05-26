@@ -4,7 +4,7 @@
 
 set -eu
 
-REPO_OWNER="${REPO_OWNER:-amored997}"
+REPO_OWNER="${REPO_OWNER:-dagmagnat}"
 REPO_NAME="${REPO_NAME:-openwrt-argon-installer}"
 REPO_BRANCH="${REPO_BRANCH:-main}"
 BASE_URL="${BASE_URL:-https://raw.githubusercontent.com/${REPO_OWNER}/${REPO_NAME}/${REPO_BRANCH}}"

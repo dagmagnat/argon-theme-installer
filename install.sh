@@ -39,7 +39,7 @@ Usage:
 Options:
   --theme-only       install only luci-theme-argon, skip luci-app-argon-config
   --force-online     allow extra online dependency recovery if local install fails
-  --skip-update      do not run opkg update/apk update before installation
+  --skip-update      skip package indexes and automatic OpenWrt 25 CA installation
   --dry-run          print detected system and selected packages without installing
   --base-url URL     override package download base URL
   -h, --help         show this help
@@ -95,6 +95,67 @@ detect_pkg_manager() {
 
 have() { command -v "$1" >/dev/null 2>&1; }
 
+is_openwrt25_apk() {
+    [ "$PKG_MANAGER" = "apk" ] || return 1
+    case "$DISTRIB_RELEASE" in
+        25.*) return 0 ;;
+        *) return 1 ;;
+    esac
+}
+
+https_help() {
+    warn "HTTPS failed. Check 'date', internet access and trusted CA certificates."
+    warn "If the clock is wrong: /etc/init.d/sysntpd restart; then verify 'date' again."
+    warn "On OpenWrt 25/APK: apk update && apk add ca-bundle ca-certificates"
+    warn "If APK also fails TLS verification, transfer trusted CA packages and dependencies from a PC."
+    warn "If install.sh itself cannot be downloaded, copy the extracted project to /tmp using SCP/SFTP."
+}
+
+check_openwrt25_clock() {
+    is_openwrt25_apk || return 0
+    log "Router time: $(date) (compare with the actual date/time)"
+    # A lower bound only: an apparently plausible date does not prove NTP sync.
+    clock_year="$(date +%Y)"
+    case "$clock_year" in
+        ''|*[!0-9]*) warn "Cannot validate the router clock; check it manually." ;;
+        *)
+            if [ "$clock_year" -lt 2025 ]; then
+                warn "The clock predates OpenWrt 25; TLS certificate verification may fail."
+                if [ "$DRY_RUN" = "0" ] && [ "$UPDATE_LISTS" = "1" ]; then
+                    https_help
+                    fail "Correct the router clock before online installation."
+                fi
+            fi
+            ;;
+    esac
+}
+
+ensure_openwrt25_ca() {
+    is_openwrt25_apk || return 0
+    if [ "$UPDATE_LISTS" = "0" ]; then
+        log "Automatic CA installation skipped by --skip-update"
+        return 0
+    fi
+    if [ "$DRY_RUN" = "1" ]; then
+        log "DRY-RUN: ensure ca-bundle and ca-certificates with apk add"
+        return 0
+    fi
+    if apk info -e ca-bundle >/dev/null 2>&1 &&
+       apk info -e ca-certificates >/dev/null 2>&1 &&
+       [ -s /etc/ssl/certs/ca-certificates.crt ]; then
+        log "Trusted CA certificates are already installed"
+        return 0
+    fi
+    log "Installing HTTPS prerequisites: ca-bundle ca-certificates"
+    if ! apk add ca-bundle ca-certificates; then
+        https_help
+        fail "CA installation failed; Argon has not been installed."
+    fi
+    if [ ! -s /etc/ssl/certs/ca-certificates.crt ]; then
+        fail "CA bundle is missing or empty after installation. Check package files; try: apk fix ca-bundle"
+    fi
+}
+
 refresh_package_lists() {
     [ "$UPDATE_LISTS" = "1" ] || {
         log "Package list update skipped by --skip-update"
@@ -116,7 +177,10 @@ refresh_package_lists() {
             ;;
         apk)
             log "Updating APK package indexes: apk update"
-            apk update || fail "apk update failed. Check internet access and configured OpenWrt repositories."
+            if ! apk update; then
+                is_openwrt25_apk && https_help
+                fail "apk update failed. Check internet access and configured OpenWrt repositories."
+            fi
             ;;
     esac
 }
@@ -127,17 +191,16 @@ fetch_file() {
 
     log "Downloading: $url"
     if have uclient-fetch; then
-        uclient-fetch -O "$out" "$url" 2>/dev/null || \
-        uclient-fetch --no-check-certificate -O "$out" "$url"
+        uclient-fetch -O "$out" "$url" && return 0
     elif have wget; then
-        wget -O "$out" "$url" 2>/dev/null || \
-        wget --no-check-certificate -O "$out" "$url"
+        wget -O "$out" "$url" && return 0
     elif have curl; then
-        curl -L --fail -o "$out" "$url" || \
-        curl -k -L --fail -o "$out" "$url"
+        curl -L --fail -o "$out" "$url" && return 0
     else
         fail "wget/curl/uclient-fetch not found"
     fi
+    https_help
+    fail "Download failed: $url"
 }
 
 check_sha256() {
@@ -255,6 +318,8 @@ log "Target: ${DISTRIB_TARGET}; arch: ${DISTRIB_ARCH}"
 log "Package manager: ${PKG_MANAGER}"
 log "Base URL: ${BASE_URL}"
 
+check_openwrt25_clock
+
 case "$PKG_MANAGER" in
     apk|opkg)
         refresh_package_lists
@@ -263,6 +328,8 @@ case "$PKG_MANAGER" in
         fail "Neither apk nor opkg was found. This does not look like a supported OpenWrt-like system."
         ;;
 esac
+
+ensure_openwrt25_ca
 
 case "$PKG_MANAGER" in
     apk)

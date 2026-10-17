@@ -14,6 +14,7 @@
 ## Что делает установщик
 
 - обновляет списки пакетов через `opkg update` или `apk update`;
+- для OpenWrt 25.x с `apk` выводит время роутера и устанавливает недостающие `ca-bundle` и `ca-certificates` перед загрузкой пакетов темы;
 - устанавливает тему `luci-theme-argon`;
 - устанавливает приложение настроек `luci-app-argon-config`;
 - включает Argon как активную тему LuCI;
@@ -63,7 +64,7 @@ apk update
 
 Это нужно, чтобы пакетный менеджер видел актуальные зависимости из родных репозиториев прошивки. Это **не обновление прошивки** и **не массовое обновление установленных пакетов**. Скрипт не выполняет `opkg upgrade` и не выполняет `apk upgrade`.
 
-Если по какой-то причине нужно отключить обновление списков, можно использовать `--skip-update`, но обычным пользователям это не рекомендуется.
+Если по какой-то причине нужно отключить обновление списков, можно использовать `--skip-update`, но обычным пользователям это не рекомендуется. Этот режим также пропускает автоматическую установку CA-сертификатов в OpenWrt 25, чтобы сохранить возможность установки из локального архива. Недостающие зависимости темы всё ещё могут потребовать интернета.
 
 ## Установка одной командой
 
@@ -129,13 +130,59 @@ sh install.sh
 ```text
 --theme-only       установить только luci-theme-argon, без luci-app-argon-config
 --force-online     расширенный режим восстановления зависимостей
---skip-update      не запускать opkg update/apk update перед установкой
+--skip-update      пропустить обновление индексов и автоустановку CA в OpenWrt 25
 --dry-run          показать определённую систему и выбранные пакеты без установки
 --base-url URL     использовать другой raw URL для загрузки пакетов
 -h, --help         показать справку
 ```
 
 ## Решение частых проблем
+
+### OpenWrt 25: Invalid SSL certificate
+
+При обычном запуске установщик выполняет `apk update`, затем проверяет наличие
+`ca-bundle`, `ca-certificates` и непустого `/etc/ssl/certs/ca-certificates.crt`.
+Недостающие пакеты устанавливаются через `apk add ca-bundle ca-certificates`
+до скачивания Argon. Проверка TLS остаётся включённой; автоматического повтора
+с `--no-check-certificate` или `curl -k` больше нет.
+
+Скрипт выводит дату роутера. Если год меньше 2025, обычная онлайн-установка
+останавливается с подсказкой исправить время. Это лишь проверка явно неверного
+года, а не подтверждение синхронизации: сравните дату и время с компьютером.
+При неверном времени выполните `/etc/init.d/sysntpd restart`, подождите
+20–30 секунд и повторите `date`. Скрипт сам часы и настройки NTP не меняет.
+
+**Если ошибка возникает при скачивании самого `install.sh`, его код ещё не
+выполняется и исправить это изнутри невозможно.** Подготовьте роутер вручную:
+
+```sh
+date
+apk update && apk add ca-bundle ca-certificates
+```
+
+Затем скачайте скрипт с проверкой результата:
+
+```sh
+wget -O /tmp/argon-install.sh https://raw.githubusercontent.com/dagmagnat/argon-theme-installer/main/install.sh && sh /tmp/argon-install.sh
+```
+
+Другой способ первого запуска: распакуйте ZIP на компьютере, скопируйте всю
+папку `argon-theme-installer-main` через SCP/SFTP в `/tmp` и выполните:
+
+```sh
+cd /tmp/argon-theme-installer-main
+sh install.sh
+```
+
+Если `apk update` тоже не может проверить сертификаты, установщик остановится
+с диагностикой. Перенесите доверенные CA-пакеты и необходимые зависимости
+для своей прошивки с компьютера. Для установки локальных пакетов темы без
+подготовки HTTPS можно использовать `sh install.sh --skip-update` — это
+обход загрузки, а не исправление системного HTTPS.
+
+`--dry-run` только сообщает о планируемой установке CA, не устанавливает их
+и не меняет часы. Изменение подготовки CA относится к версиям `25.*` с `apk`;
+другие версии и OPKG не получают дополнительных пакетов.
 
 ### LuCI не изменился после установки
 
@@ -203,6 +250,7 @@ The script automatically detects the package manager on the router:
 ## What the installer does
 
 - updates package lists with `opkg update` or `apk update`;
+- on OpenWrt 25.x with `apk`, displays the router clock and installs missing `ca-bundle` and `ca-certificates` before downloading theme packages;
 - installs `luci-theme-argon`;
 - installs `luci-app-argon-config`;
 - enables Argon as the active LuCI theme;
@@ -252,7 +300,7 @@ apk update
 
 This is required so the package manager can see current dependencies from the firmware's native repositories. This is **not a firmware upgrade** and **not a mass upgrade of installed packages**. The script does not run `opkg upgrade` or `apk upgrade`.
 
-If you really need to disable package list updates, use `--skip-update`, but this is not recommended for normal installation.
+If you really need to disable package list updates, use `--skip-update`, but this is not recommended for normal installation. This also skips automatic CA installation on OpenWrt 25 to preserve installation from local archives. Missing theme dependencies may still require internet access.
 
 ## One-command installation
 
@@ -318,13 +366,54 @@ In this mode, the script uses local packages from `packages/` and does not downl
 ```text
 --theme-only       install only luci-theme-argon, skip luci-app-argon-config
 --force-online     extended dependency recovery mode
---skip-update      do not run opkg update/apk update before installation
+--skip-update      skip package indexes and automatic OpenWrt 25 CA installation
 --dry-run          show detected system and selected packages without installing
 --base-url URL     use another raw URL for package downloads
 -h, --help         show help
 ```
 
 ## Troubleshooting
+
+### OpenWrt 25: Invalid SSL certificate
+
+Normal installation runs `apk update`, then checks for `ca-bundle`,
+`ca-certificates` and a nonempty `/etc/ssl/certs/ca-certificates.crt`.
+Missing CA packages are installed with `apk add ca-bundle ca-certificates`
+before downloading Argon. TLS verification remains enabled; downloads no
+longer retry with `--no-check-certificate` or `curl -k`.
+
+The router date is displayed. A year before 2025 stops normal online
+installation with clock-repair guidance. This only detects an obviously
+invalid year; it does not prove time synchronization. Compare with your PC.
+If incorrect, run `/etc/init.d/sysntpd restart`, wait 20–30 seconds and check
+`date` again. The installer does not change the clock or NTP configuration.
+
+**If downloading `install.sh` itself fails, the script has not started and
+cannot fix that download.** First check the time and prepare CA packages:
+
+```sh
+date
+apk update && apk add ca-bundle ca-certificates
+wget -O /tmp/argon-install.sh https://raw.githubusercontent.com/dagmagnat/argon-theme-installer/main/install.sh && sh /tmp/argon-install.sh
+```
+
+Alternatively, extract the ZIP on a PC, copy the entire
+`argon-theme-installer-main` folder to `/tmp` using SCP/SFTP, then run:
+
+```sh
+cd /tmp/argon-theme-installer-main
+sh install.sh
+```
+
+If `apk update` also fails certificate verification, installation stops with
+diagnostics. Transfer trusted CA packages and their required dependencies for
+your firmware from a PC. `sh install.sh --skip-update` uses bundled theme
+packages without HTTPS preparation; this bypasses the download rather than
+repairing system HTTPS, and missing theme dependencies may still need internet.
+
+`--dry-run` reports the planned CA preparation without installing certificates
+or changing the clock. CA preparation applies to `25.*` releases with `apk`;
+other versions and OPKG do not get additional packages.
 
 ### LuCI did not change after installation
 
